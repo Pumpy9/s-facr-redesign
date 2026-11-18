@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Databáze hráčů – Veřejný portál IS FAČR</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; }
+  .public-nav a:hover { color: #fff; }
+  .public-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; flex-grow: 1; }
+  
+  .search-box { display: flex; gap: 12px; margin-bottom: 24px; background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); }
+  .search-box input { flex: 1; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 1rem; outline: none; }
+  .search-box input:focus { border-color: var(--primary); }
+  
+  .table-wrapper { overflow-x: auto; background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); margin-bottom: 24px; }
+  .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .data-table th, .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .data-table th { background: #f8f9fc; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+  .data-table tbody tr:hover { background: var(--surface); }
+
+  /* Styly pro stránkování */
+  .pagination { display: flex; justify-content: center; gap: 8px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  .pagination button { min-width: 40px; padding: 0 12px; }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="public-league.html">Soutěže a výsledky</a>
+    <a href="public-clubs.html">Kluby</a>
+    <a href="public-players.html" style="color: #fff; font-weight: 600;">Hráči</a>
+  </nav>
+</header>
+
+<main class="public-main">
+  <h1>Vyhledávání hráčů</h1>
+  <p class="muted" style="margin-bottom: 24px;">Kompletní databáze aktivních hráčů (9. liga sk. B)</p>
+
+  <div class="search-box">
+    <input type="text" id="player-search" placeholder="Zadejte jméno nebo ID hráče (např. 'Novák' nebo '111')...">
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Jméno hráče</th><th>Klub</th><th>Ročník</th><th>Pozice</th></tr></thead>
+      <tbody id="players-body"></tbody>
+    </table>
+  </div>
+  
+  <!-- Obal pro tlačítka stránkování -->
+  <div id="pagination-controls" class="pagination"></div>
+</main>
+
+<script src="js/db.js"></script>
+<script>
+  const searchInput = document.getElementById('player-search');
+  const tbody = document.getElementById('players-body');
+  const paginationControls = document.getElementById('pagination-controls');
+
+  // Proměnné pro stránkování
+  let currentPage = 1;
+  const itemsPerPage = 20;
+  let currentFilteredPlayers = [];
+
+  // --- NOVÝ KÓD PRO NAČTENÍ Z URL ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q') || '';
+  if (initialQuery) {
+    searchInput.value = initialQuery;
+  }
+
+  // Funkce vyvolaná při změně textu ve vyhledávání
+  function filterPlayers(query = '') {
+    const term = query.toLowerCase();
+    
+    // Vyfiltrujeme hráče podle jména nebo ID
+    currentFilteredPlayers = db.players.filter(p => 
+      p.name.toLowerCase().includes(term) || p.id.includes(term)
+    );
+    
+    // Po každém novém hledání se vrátíme na první stránku
+    currentPage = 1; 
+    renderPage();
+  }
+
+  // Funkce pro vykreslení konkrétní stránky
+  function renderPage() {
+    const totalPages = Math.ceil(currentFilteredPlayers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    // Výběr hráčů pro aktuální stránku
+    const paginatedPlayers = currentFilteredPlayers.slice(startIndex, endIndex);
+
+    // Pokud se nic nenajde
+    if (paginatedPlayers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 24px;">Žádní hráči nenalezeni.</td></tr>';
+      paginationControls.innerHTML = '';
+      return;
+    }
+
+    // Vykreslení řádků tabulky
+    tbody.innerHTML = paginatedPlayers.map(p => `
+      <tr>
+        <td class="muted">${p.id}</td>
+        <td style="font-weight: 600;">${p.name}</td>
+        <td><a href="public-club.html?id=${p.clubId}" style="color: var(--primary); text-decoration: none; font-weight: 500;">${getClubName(p.clubId)}</a></td>
+        <td>${p.year}</td>
+        <td>${p.position}</td>
+      </tr>
+    `).join('');
+
+    renderPaginationButtons(totalPages);
+  }
+
+  // Vykreslení tlačítek pro přepínání
+  function renderPaginationButtons(totalPages) {
+    if (totalPages <= 1) {
+      paginationControls.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+    
+    // Tlačítko "Předchozí"
+    html += `<button type="button" class="btn outline small" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">Předchozí</button>`;
+
+    // Generování čísel stránek
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === currentPage) {
+        // Zvýrazněná aktuální stránka
+        html += `<button type="button" class="btn small" style="border: 2px solid var(--primary); background: var(--primary); color: #fff;">${i}</button>`;
+      } else {
+        // Ostatní stránky
+        html += `<button type="button" class="btn outline small" onclick="changePage(${i})">${i}</button>`;
+      }
+    }
+
+    // Tlačítko "Další"
+    html += `<button type="button" class="btn outline small" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">Další</button>`;
+
+    paginationControls.innerHTML = html;
+  }
+
+  // Funkce volaná po kliknutí na číslo stránky
+  function changePage(pageNumber) {
+    currentPage = pageNumber;
+    renderPage();
+    // Odscrollování zpět na začátek tabulky
+    document.querySelector('.search-box').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // Okamžité vyhledávání při psaní
+  searchInput.addEventListener('input', (e) => filterPlayers(e.target.value));
+  
+  // Prvotní inicializace celé databáze (všech 150 hráčů)
+  filterPlayers(initialQuery);
+</script>
+</body>
+</html>

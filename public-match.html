@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detail utkání – Veřejný portál IS FAČR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; transition: color 0.2s; }
+  .public-nav a:hover { color: #fff; }
+
+  .public-main { padding: 40px; max-width: 1000px; margin: 0 auto; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 24px; }
+  .breadcrumbs { font-size: 0.9rem; color: var(--muted); display: flex; gap: 8px; }
+  .breadcrumbs a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  
+  .roster-list { list-style: none; padding: 0; margin: 0 0 16px; }
+  .roster-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .roster-list .p-num { width: 32px; height: 32px; background: var(--surface); border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--primary); font-size: 0.85rem; flex-shrink: 0; }
+  
+  @media (max-width: 768px) {
+    .public-header { padding: 16px 20px; flex-direction: column; height: auto; gap: 16px; }
+    .public-main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="public-league.html" style="color: #fff; font-weight: 600;">Soutěže a výsledky</a>
+    <a href="public-clubs.html">Kluby</a>
+    <a href="public-players.html">Hráči</a>
+    <a href="login.html" class="btn outline small" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #fff; display: inline-flex; align-items: center; justify-content: center;">Přihlásit do IS</a>
+  </nav>
+</header>
+
+<main class="public-main" id="match-container">
+  <p style="text-align: center; color: var(--muted); padding: 40px;">Načítání zápasu...</p>
+</main>
+
+<script src="js/db.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const matchId = urlParams.get('id') || "1001"; // Fallback na zápas Kostelec vs Prusinovice
+  const match = getMatch(matchId);
+  const container = document.getElementById('match-container');
+
+  if (!match) {
+    container.innerHTML = '<p style="text-align:center; color: var(--danger); font-weight: 600;">Zápas nebyl nalezen.</p>';
+  } else {
+    const homeClub = getClub(match.homeId);
+    const awayClub = getClub(match.awayId);
+    const isPlayed = match.status === 'played';
+    
+    // Časová osa
+    let eventsHtml = '<li class="empty">Zatím nebyly zaznamenány žádné události.</li>';
+    if (match.events && match.events.length > 0) {
+      // Seřadíme události podle minuty
+      const sortedEvents = [...match.events].sort((a, b) => a.minute - b.minute);
+      eventsHtml = sortedEvents.map(e => {
+        const isHome = e.teamId === match.homeId;
+        const player = getPlayer(e.playerId);
+        const playerName = player ? player.name : 'Neznámý hráč';
+        const playerNum = player ? player.number : '?';
+        const clubName = isHome ? homeClub.name : awayClub.name;
+        
+        let typeIcon = '';
+        let typeText = '';
+        if (e.type === 'goal') { typeIcon = '<span class="tl-ico goal"></span>'; typeText = 'Gól'; }
+        if (e.type === 'yellow') { typeIcon = '<span class="tl-ico yellow"></span>'; typeText = 'Žlutá karta'; }
+        if (e.type === 'red') { typeIcon = '<span class="tl-ico red"></span>'; typeText = 'Červená karta'; }
+        
+        const noteHtml = e.note ? `<span class="tl-note">${e.note}</span>` : '';
+        
+        return `
+          <li class="tl-item ${isHome ? 'home' : 'away'}">
+            <span class="tl-min">${e.minute}′</span>
+            <div class="tl-ev">
+              <p class="tl-team">${clubName}</p>
+              <p class="tl-row">${typeIcon}<strong>${typeText}</strong>${noteHtml}</p>
+              <p class="tl-row"><span class="jersey">${playerNum}</span><span class="tl-name">${playerName}</span></p>
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    // Pomocná funkce pro vypsání soupisky (rozdělení na základ a náhradníky simulujeme indexem)
+    const renderRoster = (clubId) => {
+      const players = getPlayersByClub(clubId);
+      const starters = players.slice(0, 11).map((p, i) => `
+        <li>
+          <span class="p-num">${p.number}</span> 
+          <span class="p-name">${p.name} ${i === 0 ? '<strong style="color: var(--primary);">(B)</strong>' : ''} ${i === 9 ? '<strong style="color: var(--primary);">(K)</strong>' : ''}</span>
+        </li>
+      `).join('');
+      const subs = players.slice(11).map(p => `
+        <li><span class="p-num">${p.number}</span> <span class="p-name">${p.name}</span></li>
+      `).join('');
+      
+      return `
+        <h4 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;">Základní sestava</h4>
+        <ul class="roster-list">${starters}</ul>
+        <h4 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; margin-top: 16px;">Náhradníci</h4>
+        <ul class="roster-list">${subs}</ul>
+        <h4 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; margin-top: 16px;">Realizační tým</h4>
+        <ul class="roster-list"><li><span class="p-name">Vedoucí/Trenér: ${getClub(clubId).manager}</span></li></ul>
+      `;
+    };
+
+    container.innerHTML = `
+      <div class="breadcrumbs">
+        <a href="public-league.html">${db.league.name}</a> &rsaquo; 
+        <a href="#">${match.round}. kolo</a> &rsaquo; 
+        <span>Detail utkání</span>
+      </div>
+
+      <section class="scoreboard" aria-label="Skóre">
+        <p class="sb-team sb-home">${homeClub.name}</p>
+        <p class="sb-score">
+          <span>${isPlayed ? match.scoreHome : '-'}</span>
+          <span class="sb-sep">:</span>
+          <span>${isPlayed ? match.scoreAway : '-'}</span>
+        </p>
+        <p class="sb-team sb-away">${awayClub.name}</p>
+        <div class="sb-meta">
+          <span class="sb-phase">${isPlayed ? 'Zápas ukončen' : 'Neodehráno'}</span>
+          <span>${match.date}</span>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="card" aria-labelledby="ev-h">
+          <div class="card-head"><h2 id="ev-h">Průběh utkání</h2></div>
+          <ul class="timeline ${!match.events || match.events.length === 0 ? 'is-empty' : ''}">
+            ${eventsHtml}
+          </ul>
+        </section>
+
+        <div class="col">
+          <section class="card" aria-labelledby="lu-h">
+            <h2 id="lu-h" style="margin-bottom: 20px; border-bottom: 2px solid var(--line); padding-bottom: 8px;">Sestavy týmů</h2>
+            <div style="margin-bottom: 32px;">
+              <h3 style="color: var(--primary); margin-bottom: 12px; font-size: 1.1rem;"><a href="public-club.html?id=${homeClub.id}" style="color: inherit; text-decoration: none;">${homeClub.name}</a></h3>
+              ${renderRoster(homeClub.id)}
+            </div>
+            <div>
+              <h3 style="color: var(--primary); margin-bottom: 12px; font-size: 1.1rem;"><a href="public-club.html?id=${awayClub.id}" style="color: inherit; text-decoration: none;">${awayClub.name}</a></h3>
+              ${renderRoster(awayClub.id)}
+            </div>
+          </section>
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

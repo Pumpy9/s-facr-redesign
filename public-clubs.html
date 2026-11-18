@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adresář klubů – Veřejný portál IS FAČR</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; }
+  .public-nav a:hover { color: #fff; }
+  .public-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; flex-grow: 1; }
+  
+  .clubs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .club-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: 0 1px 3px rgba(20,24,43,.12); text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 16px; transition: transform 0.2s; }
+  .club-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(30,42,94,.15); }
+  .club-color { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="public-league.html">Soutěže a výsledky</a>
+    <a href="public-clubs.html" style="color: #fff; font-weight: 600;">Kluby</a>
+    <a href="public-players.html">Hráči</a>
+  </nav>
+</header>
+
+<main class="public-main">
+  <h1 style="margin-bottom: 24px;">Adresář klubů (Zlínský kraj)</h1>
+  <div class="clubs-grid" id="clubs-container"></div>
+</main>
+
+<script src="js/db.js"></script>
+<script>
+  const container = document.getElementById('clubs-container');
+  container.innerHTML = db.clubs.map(c => `
+    <a href="public-club.html?id=${c.id}" class="club-card">
+      <div class="club-color" style="background: linear-gradient(135deg, ${c.colors[0]} 50%, ${c.colors[1]} 50%);"></div>
+      <div>
+        <h3 style="margin: 0 0 4px; font-size: 1.1rem;">${c.name}</h3>
+        <p class="muted" style="font-size: 0.9rem;">ID: ${c.id} | ${c.district}</p>
+      </div>
+    </a>
+  `).join('');
+</script>
+</body>
+</html>

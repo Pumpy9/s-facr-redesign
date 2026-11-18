@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autentizace – IS FAČR</title>
+<script>
+  const activeRole = localStorage.getItem('facr-role');
+  if (activeRole === 'club') window.location.href = 'dashboard.html';
+  if (activeRole === 'referee') window.location.href = 'referee.html';
+</script>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  
+  .public-header { 
+    background: var(--primary); color: #fff; padding: 0 40px; height: 72px; 
+    display: flex; justify-content: space-between; align-items: center; 
+    box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100;
+  }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; transition: color 0.2s; }
+  .public-nav a:hover { color: #fff; }
+  .public-nav a.btn { display: inline-flex; align-items: center; justify-content: center; }
+
+  .login-layout {
+    flex-grow: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface) url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Czech_Republic_football_association_logo.svg/512px-Czech_Republic_football_association_logo.svg.png') no-repeat center center;
+    background-size: 15%; background-blend-mode: soft-light; padding: 40px 20px;
+  }
+  .login-card {
+    background: var(--card); width: 100%; max-width: 440px; padding: 40px;
+    border-radius: 24px; box-shadow: 0 12px 40px rgba(20,24,43,0.15);
+  }
+  .login-card h1 { margin-bottom: 8px; font-size: 1.75rem; text-align: center; }
+  .login-card p.subtitle { color: var(--muted); margin-bottom: 24px; text-align: center; }
+  
+  .form-group { text-align: left; margin-bottom: 16px; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .form-group input, .form-group select { width: 100%; min-height: var(--target); padding: 0 16px; font-size: 1rem; border: 1px solid #B9BFD3; border-radius: 12px; background: #fff; }
+  .form-group input:focus, .form-group select:focus { outline: 3px solid #4A63D6; outline-offset: 1px; }
+  
+  .login-btn { width: 100%; margin-top: 8px; margin-bottom: 16px; }
+  
+  .auth-links { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--line); text-align: center; }
+  .auth-links button { background: none; border: none; color: var(--primary); font-weight: 600; min-height: 40px; cursor: pointer; font-size: 1rem; }
+  .auth-links button:hover { text-decoration: underline; }
+  .auth-links button.muted-link { color: var(--muted); font-weight: 500; font-size: 0.95rem; }
+
+  .auth-view { display: none; }
+  .auth-view.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  
+  @media (max-width: 768px) {
+    .public-header { padding: 16px 20px; flex-direction: column; height: auto; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="portal.html" class="btn outline small" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #fff;">Zpět na portál</a>
+  </nav>
+</header>
+
+<div class="login-layout">
+  <main class="login-card">
+    
+    <!-- 1. PŘIHLÁŠENÍ -->
+    <div id="view-login" class="auth-view active">
+      <h1>Přihlášení</h1>
+      <p class="subtitle">Vítejte v novém informačním systému</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="account">Vyberte účet (Demo přihlášení)</label>
+          <select id="account">
+            <optgroup label="Rozhodčí">
+              <option value="ref1">Tomáš Mutný (mutny@facr.cz)</option>
+              <option value="ref2">Lukáš Král (kral@facr.cz)</option>
+              <option value="ref3">Petr Novotný (novotny@facr.cz)</option>
+            </optgroup>
+            <optgroup label="Kluby">
+              <option value="club1">TJ Prusinovice, z.s. (prusinovice@facr.cz)</option>
+              <option value="club2">FC Kostelec u Holešova (kostelec@facr.cz)</option>
+              <option value="club3">TJ Sokol Rymice B (rymice@facr.cz)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="mutny@facr.cz">
+        </div>
+        <div class="form-group">
+          <label for="password">Heslo</label>
+          <input type="password" id="password" placeholder="••••">
+        </div>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <a href="#" style="color: var(--muted); font-size: 0.9rem; text-decoration: none;">Zapomenuté heslo?</a>
+        </div>
+        <button type="submit" class="btn login-btn">Přihlásit se</button>
+      </form>
+      <div class="auth-links">
+        <button type="button" onclick="switchView('view-register')">Nemáte účet? Stát se členem</button>
+        <button type="button" onclick="switchView('view-migrate')" class="muted-link">Migrovat stávající účet</button>
+      </div>
+    </div>
+
+    <!-- 2. REGISTRACE -->
+    <div id="view-register" class="auth-view">
+      <h1>Registrace</h1>
+      <p class="subtitle">Založte si účet a staňte se členem</p>
+      <form action="portal.html" method="GET">
+        <div class="form-group"><label>Jméno a příjmení</label><input type="text" required></div>
+        <div class="form-group"><label>E-mail</label><input type="email" required></div>
+        <div class="form-group"><label>Nové heslo</label><input type="password" required></div>
+        <button type="submit" class="btn login-btn">Vytvořit účet</button>
+      </form>
+      <div class="auth-links"><button type="button" onclick="switchView('view-login')">Zpět na přihlášení</button></div>
+    </div>
+    
+    <!-- 3. MIGRACE -->
+    <div id="view-migrate" class="auth-view">
+      <h1>Migrace člena</h1>
+      <p class="subtitle">Přechod ze starého systému</p>
+      <form action="portal.html" method="GET">
+        <div class="form-group"><label>ID člena (FAČR)</label><input type="text" placeholder="Např. 90123456" required></div>
+        <div class="form-group"><label>Heslo ze starého systému</label><input type="password" required></div>
+        <button type="submit" class="btn login-btn">Provést migraci</button>
+      </form>
+      <div class="auth-links"><button type="button" onclick="switchView('view-login')">Zpět na přihlášení</button></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/db.js"></script>
+<script>
+  function switchView(viewId) {
+    document.querySelectorAll('.auth-view').forEach(el => el.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+  }
+
+  // Automatické předvyplnění e-mailu podle vybraného demo účtu
+  const accountSelect = document.getElementById('account');
+  const emailInput = document.getElementById('email');
+  function syncEmailPlaceholder() {
+    const u = db.users.find(x => x.id === accountSelect.value);
+    if (u) emailInput.value = u.email;
+  }
+  accountSelect.addEventListener('change', syncEmailPlaceholder);
+  syncEmailPlaceholder();
+
+  document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault(); 
+    const userId = accountSelect.value;
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return;
+
+    localStorage.setItem('facr-role', user.role); 
+    localStorage.setItem('facr-user-id', user.id); 
+    
+    window.location.href = user.role === 'club' ? 'dashboard.html' : 'referee.html';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veřejný portál – IS FAČR</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; transition: color 0.2s; }
+  .public-nav a:hover { color: #fff; }
+  .public-nav a.btn {display: inline-flex; align-items: center; justify-content: center;}
+  
+  .hero-section { background: linear-gradient(135deg, var(--primary) 0%, #2A3B85 100%); color: #fff; padding: 60px 40px; text-align: center; }
+  .hero-section h1 { font-size: 2.5rem; margin-bottom: 16px; }
+  .hero-section p { font-size: 1.1rem; opacity: 0.9; margin-bottom: 32px; }
+  
+  /* Obal pro vyhledávání a našeptávač */
+  .search-wrapper { max-width: 600px; margin: 0 auto; position: relative; }
+  
+  .global-search { display: flex; gap: 12px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.2); }
+  .global-search input { flex: 1; border: none; background: #fff; border-radius: 16px; padding: 0 20px; font-size: 1.1rem; outline: none; min-height: 48px; color: var(--text); }
+  .global-search input:focus { box-shadow: 0 0 0 4px rgba(255,255,255,0.3); }
+
+  /* Styly pro rozbalovací našeptávač */
+  .suggestions-dropdown {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background: var(--card); border-radius: 16px; box-shadow: 0 12px 32px rgba(20,24,43,0.25);
+    border: 1px solid var(--line); overflow: hidden; z-index: 200; text-align: left;
+  }
+  .suggestion-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 12px 20px; text-decoration: none; color: var(--text);
+    border-bottom: 1px solid var(--line); transition: background 0.15s;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: var(--surface); }
+  .suggestion-title { font-weight: 600; display: block; }
+  .suggestion-sub { font-size: 0.85rem; color: var(--muted); }
+  .suggestion-badge {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px;
+    border-radius: 8px; flex-shrink: 0;
+  }
+  .badge-league { background: #E0E7FF; color: #3730A3; }
+  .badge-club { background: var(--ok-bg); color: var(--ok); }
+  .badge-player { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+  .suggestion-empty { padding: 16px 20px; color: var(--muted); text-align: center; font-size: 0.95rem; }
+  
+  .public-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; flex-grow: 1; }
+  .portal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+  .portal-card { background: var(--card); padding: 24px; border-radius: var(--radius); box-shadow: 0 4px 12px rgba(20,24,43,.05); border: 1px solid var(--line); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; text-decoration: none; color: var(--text); }
+  .portal-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(30,42,94,.1); border-color: var(--primary); }
+  .portal-card h2 { font-size: 1.25rem; color: var(--primary); margin-bottom: 8px; }
+  .portal-card p { color: var(--muted); margin-bottom: 16px; flex-grow: 1; }
+  .portal-card .action { font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 4px; }
+
+  @media (max-width: 768px) {
+    .public-header { padding: 16px 20px; flex-direction: column; height: auto; gap: 16px; }
+    .hero-section { padding: 40px 20px; }
+    .global-search { flex-direction: column; background: transparent; padding: 0; border: none; }
+    .public-main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="public-league.html">Soutěže a výsledky</a>
+    <a href="public-clubs.html">Kluby</a>
+    <a href="public-players.html">Hráči</a>
+    <a href="login.html" class="btn outline small" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #fff;">Přihlásit do IS</a>
+  </nav>
+</header>
+
+<section class="hero-section">
+  <h1>Najděte vše o českém fotbale</h1>
+  <p>Kompletní výsledky, tabulky, profily hráčů a databáze klubů na jednom místě.</p>
+  
+  <div class="search-wrapper">
+    <form id="global-search-form" class="global-search" autocomplete="off">
+      <input type="text" id="global-search-input" placeholder="Hledat hráče, klub, soutěž (např. 9. liga, Prusinovice)..." aria-label="Vyhledávání" required>
+      <button type="submit" class="btn" style="background: var(--yellow); color: var(--text); border-color: var(--yellow);">Hledat</button>
+    </form>
+    <!-- Kontejner pro našeptávač -->
+    <div id="search-suggestions" class="suggestions-dropdown" hidden></div>
+  </div>
+</section>
+
+<main class="public-main">
+  <h2 style="margin-bottom: 24px;">Rychlý rozcestník</h2>
+  <div class="portal-grid">
+    <a href="public-league.html" class="portal-card">
+      <h2>Soutěže a tabulky</h2>
+      <p>Procházejte aktuální ročník od první ligy až po okresní přebory. Kompletní rozlosování a výsledky.</p>
+      <div class="action">Zobrazit soutěže →</div>
+    </a>
+    <a href="public-players.html" class="portal-card">
+      <h2>Databáze hráčů</h2>
+      <p>Vyhledávejte v registrech FAČR. Zkontrolujte přestupy, hostování a historii utkání hráčů.</p>
+      <div class="action">Hledat hráče →</div>
+    </a>
+    <a href="public-clubs.html" class="portal-card">
+      <h2>Adresář klubů</h2>
+      <p>Vyhledejte si fotbalové kluby ve vašem okolí včetně kontaktních údajů a soupisek týmů.</p>
+      <div class="action">Zobrazit adresář →</div>
+    </a>
+    <a href="public-league.html" class="portal-card">
+      <h2>Zápisy o utkání</h2>
+      <p>Detailní průběhy již odehraných zápasů, góly, karty a potvrzené sestavy obou týmů.</p>
+      <div class="action">Poslední zápasy →</div>
+    </a>
+  </div>
+</main>
+
+<script src="js/db.js"></script>
+<script>
+  const searchInput = document.getElementById('global-search-input');
+  const searchForm = document.getElementById('global-search-form');
+  const suggestionsBox = document.getElementById('search-suggestions');
+
+  // 1. Živý našeptávač při psaní
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim().toLowerCase();
+    
+    // Zobrazíme až od 2 zadaných znaků
+    if (query.length < 2) {
+      suggestionsBox.hidden = true;
+      return;
+    }
+
+    const results = [];
+
+    // Hledání v soutěži
+    if (
+      db.league.name.toLowerCase().includes(query) ||
+      db.league.region.toLowerCase().includes(query) ||
+      db.league.id.toLowerCase().includes(query)
+    ) {
+      results.push({
+        title: db.league.name,
+        sub: `${db.league.region} • ${db.league.season}`,
+        url: 'public-league.html',
+        badge: 'Soutěž',
+        badgeClass: 'badge-league'
+      });
+    }
+
+    // Hledání v klubech (max 4 výsledky)
+    const matchedClubs = db.clubs.filter(c =>
+      c.name.toLowerCase().includes(query) ||
+      c.shortName.toLowerCase().includes(query) ||
+      c.id.includes(query)
+    ).slice(0, 4);
+
+    matchedClubs.forEach(c => {
+      results.push({
+        title: c.name,
+        sub: `Okres ${c.district} • ID: ${c.id}`,
+        url: `public-club.html?id=${c.id}`,
+        badge: 'Klub',
+        badgeClass: 'badge-club'
+      });
+    });
+
+    // Hledání v hráčích (max 5 výsledků)
+    const matchedPlayers = db.players.filter(p =>
+      p.name.toLowerCase().includes(query) ||
+      p.id.includes(query)
+    ).slice(0, 5);
+
+    matchedPlayers.forEach(p => {
+      results.push({
+        title: p.name,
+        sub: `${getClubName(p.clubId)} • ročník ${p.year}`,
+        url: `public-players.html?q=${encodeURIComponent(p.name)}`,
+        badge: 'Hráč',
+        badgeClass: 'badge-player'
+      });
+    });
+
+    // Vykreslení našeptávače
+    if (results.length === 0) {
+      suggestionsBox.innerHTML = `<div class="suggestion-empty">Pro „${this.value}“ nebylo nic nalezeno.</div>`;
+    } else {
+      suggestionsBox.innerHTML = results.map(item => `
+        <a href="${item.url}" class="suggestion-item">
+          <div>
+            <span class="suggestion-title">${item.title}</span>
+            <span class="suggestion-sub">${item.sub}</span>
+          </div>
+          <span class="suggestion-badge ${item.badgeClass}">${item.badge}</span>
+        </a>
+      `).join('');
+    }
+
+    suggestionsBox.hidden = false;
+  });
+
+  // Skrytí našeptávače při kliknutí mimo vyhledávání
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrapper')) {
+      suggestionsBox.hidden = true;
+    }
+  });
+
+  // 2. Odeslání formuláře (když uživatel zmáčkne Enter nebo tlačítko Hledat)
+  searchForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) return;
+
+    // Priorita 1: Soutěž
+    if (db.league.name.toLowerCase().includes(query) || db.league.id.toLowerCase() === query) {
+      window.location.href = 'public-league.html';
+      return;
+    }
+
+    // Priorita 2: Klub
+    const clubMatch = db.clubs.find(c => 
+      c.name.toLowerCase().includes(query) || 
+      c.shortName.toLowerCase().includes(query) || 
+      c.id === query
+    );
+    if (clubMatch) {
+      window.location.href = `public-club.html?id=${clubMatch.id}`;
+      return;
+    }
+
+    // Priorita 3: Hráči
+    window.location.href = `public-players.html?q=${encodeURIComponent(query)}`;
+  });
+</script>
+</body>
+</html>

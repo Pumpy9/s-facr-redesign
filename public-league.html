@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9. liga skupina B – Veřejný portál IS FAČR</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; }
+  
+  .public-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; flex-grow: 1; }
+  
+  .table-wrapper { overflow-x: auto; background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); margin-bottom: 32px; }
+  .data-table { width: 100%; border-collapse: collapse; text-align: center; }
+  .data-table th, .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .data-table th { background: #f8f9fc; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+  .data-table td:nth-child(2) { text-align: left; font-weight: 600; }
+  .data-table tbody tr:hover { background: var(--surface); cursor: pointer; }
+  
+  .score-box { background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 8px; font-weight: 700; display: inline-block; min-width: 48px; }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="#" style="color: #fff; font-weight: 600;">Soutěže a výsledky</a>
+    <a href="#">Kluby</a>
+    <a href="#">Hráči</a>
+  </nav>
+</header>
+
+<main class="public-main">
+  <div style="margin-bottom: 24px;">
+    <p class="muted" id="league-region"></p>
+    <h1 id="league-name">Načítání soutěže...</h1>
+  </div>
+
+  <div class="grid">
+    <!-- Průběžná tabulka -->
+    <section aria-labelledby="tab-h" style="grid-column: 1 / span 2;">
+      <h2 id="tab-h" style="margin-bottom: 16px;">Průběžná tabulka</h2>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Klub</th>
+              <th title="Odehrané zápasy">Z</th>
+              <th title="Výhry">V</th>
+              <th title="Remízy">R</th>
+              <th title="Prohry">P</th>
+              <th title="Skóre">Skóre</th>
+              <th title="Body">B</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body">
+            <!-- Vygenerováno pomocí JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Rozpis zápasů -->
+    <section aria-labelledby="mat-h" style="grid-column: 1 / span 2;">
+      <h2 id="mat-h" style="margin-bottom: 16px;">Poslední a nadcházející zápasy</h2>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Kolo / Datum</th>
+              <th style="text-align: right;">Domácí</th>
+              <th>Výsledek</th>
+              <th style="text-align: left;">Hosté</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="matches-body">
+            <!-- Vygenerováno pomocí JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- Načtení naší databáze -->
+<script src="js/db.js"></script>
+<script>
+  // 1. Zobrazení hlavičky soutěže
+  document.getElementById('league-name').textContent = db.league.name;
+  document.getElementById('league-region').textContent = `${db.league.region} | Sezóna ${db.league.season}`;
+
+  // 2. Vykreslení tabulky (Standings)
+  const standingsBody = document.getElementById('standings-body');
+  standingsBody.innerHTML = db.league.standings.map(row => `
+    <tr onclick="window.location.href='public-club.html?id=${row.clubId}'">
+      <td><strong>${row.rank}.</strong></td>
+      <td>
+        <a href="#" style="color: var(--text); text-decoration: none;">
+          ${getClubName(row.clubId)}
+        </a>
+      </td>
+      <td>${row.played}</td>
+      <td>${row.w}</td>
+      <td>${row.d}</td>
+      <td>${row.l}</td>
+      <td>${row.goalsFor}:${row.goalsAgainst}</td>
+      <td style="font-weight: 700; color: var(--primary); font-size: 1.1rem;">${row.points}</td>
+    </tr>
+  `).join('');
+
+  // 3. Vykreslení zápasů (Matches)
+  const matchesBody = document.getElementById('matches-body');
+  matchesBody.innerHTML = db.matches.map(m => {
+    const isPlayed = m.status === 'played';
+    const scoreHtml = isPlayed 
+      ? `<span class="score-box">${m.scoreHome} : ${m.scoreAway}</span>` 
+      : `<span class="chip">Neodehráno</span>`;
+      
+    return `
+      <tr>
+        <td style="text-align: left;"><span class="muted">${m.round}. kolo</span><br>${m.date}</td>
+        <td style="text-align: right; font-weight: 600;">${getClubName(m.homeId)}</td>
+        <td>${scoreHtml}</td>
+        <td style="text-align: left; font-weight: 600;">${getClubName(m.awayId)}</td>
+        <td>
+          <a href="public-match.html?id=${m.id}" class="btn outline small" style="min-height: 32px; padding: 0 12px; font-size: 0.85rem;">
+            Zápis
+          </a>
+        </td>
+      </tr>
+    `;
+  }).join('');
+</script>
+</body>
+</html>

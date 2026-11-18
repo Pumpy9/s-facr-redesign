@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detail klubu – Veřejný portál IS FAČR</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { background: var(--surface); display: flex; flex-direction: column; min-height: 100vh; }
+  .public-header { background: var(--primary); color: #fff; padding: 0 40px; height: 72px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(30,42,94,.15); position: sticky; top: 0; z-index: 100; }
+  .public-brand { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: #fff; }
+  .public-brand span { font-size: 1rem; font-weight: 400; opacity: 0.85; }
+  .public-nav { display: flex; gap: 24px; align-items: center; }
+  .public-nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 1rem; }
+  .public-nav a:hover { color: #fff; }
+  .public-main { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; flex-grow: 1; }
+  .table-wrapper { overflow-x: auto; background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); margin-bottom: 32px; }
+  .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .data-table th, .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .data-table th { background: #f8f9fc; color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header class="public-header">
+  <a href="portal.html" class="public-brand">FAČR <span>Informační systém</span></a>
+  <nav class="public-nav">
+    <a href="public-league.html">Soutěže a výsledky</a>
+    <a href="public-clubs.html">Kluby</a>
+    <a href="public-players.html">Hráči</a>
+  </nav>
+</header>
+
+<main class="public-main">
+  <div style="margin-bottom: 32px; display: flex; align-items: center; gap: 20px;">
+    <div id="club-badge" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--line);"></div>
+    <div>
+      <h1 id="club-name">Načítání...</h1>
+      <p class="muted" id="club-meta"></p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Soupiska -->
+    <section class="card" style="grid-column: 1 / span 2; padding: 0; overflow: hidden;">
+      <h2 style="padding: 20px; margin: 0; border-bottom: 1px solid var(--line);">Soupiska hráčů</h2>
+      <div class="table-wrapper" style="box-shadow: none; margin: 0; border-radius: 0;">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Jméno</th><th>Ročník</th><th>Pozice</th><th>Góly v sezóně</th></tr></thead>
+          <tbody id="roster-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Zápasy klubu -->
+    <section class="card" style="grid-column: 1 / span 2; padding: 0; overflow: hidden; margin-top: 24px;">
+      <h2 style="padding: 20px; margin: 0; border-bottom: 1px solid var(--line);">Zápasy týmu</h2>
+      <div class="table-wrapper" style="box-shadow: none; margin: 0; border-radius: 0;">
+        <table class="data-table">
+          <thead><tr><th>Datum</th><th>Domácí</th><th>Výsledek</th><th>Hosté</th><th>Detail</th></tr></thead>
+          <tbody id="matches-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="js/db.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const clubId = urlParams.get('id') || "7210111"; // Fallback na Kostelec, pokud chybí ID
+  
+  const club = getClub(clubId);
+  if (club) {
+    document.getElementById('club-name').textContent = club.name;
+    document.getElementById('club-meta').textContent = `ID: ${club.id} | Okres: ${club.district} | Vedoucí: ${club.manager}`;
+    document.getElementById('club-badge').style.background = `linear-gradient(135deg, ${club.colors[0]} 50%, ${club.colors[1]} 50%)`;
+
+    // Vykreslení soupisky
+    const players = getPlayersByClub(club.id);
+    document.getElementById('roster-body').innerHTML = players.map(p => `
+      <tr>
+        <td><strong>${p.number}</strong></td>
+        <td style="font-weight: 500;">${p.name}</td>
+        <td>${p.year}</td>
+        <td>${p.position}</td>
+        <td><strong>${p.goals}</strong></td>
+      </tr>
+    `).join('');
+
+    // Vykreslení zápasů (kde je tým domácí nebo host)
+    const teamMatches = db.matches.filter(m => m.homeId === club.id || m.awayId === club.id);
+    document.getElementById('matches-body').innerHTML = teamMatches.map(m => {
+      const isPlayed = m.status === 'played';
+      const score = isPlayed ? `<span style="background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 8px; font-weight: 700;">${m.scoreHome} : ${m.scoreAway}</span>` : `<span class="chip">Neodehráno</span>`;
+      return `
+        <tr>
+          <td>${m.date}</td>
+          <td style="${m.homeId === club.id ? 'font-weight: 700;' : ''}">${getClubName(m.homeId)}</td>
+          <td>${score}</td>
+          <td style="${m.awayId === club.id ? 'font-weight: 700;' : ''}">${getClubName(m.awayId)}</td>
+          <td><a href="public-match.html?id=${m.id}" class="btn outline small" style="padding: 0 12px; min-height: 32px; font-size: 0.85rem;">Zápis</a></td>
+        </tr>
+      `;
+    }).join('');
+  }
+</script>
+</body>
+</html>

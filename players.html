@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Přehled hráčů – IS FAČR</title>
+<script>
+  const role = localStorage.getItem('facr-role');
+  if (role !== 'club') {
+    window.location.href = role === 'referee' ? 'referee.html' : 'login.html';
+  }
+</script>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .filter-bar { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-group { flex: 1; min-width: 200px; }
+  .filter-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .filter-group input, .filter-group select { width: 100%; min-height: var(--target); padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; font: inherit; background: #fff; }
+  .filter-group input:focus, .filter-group select:focus { outline: 3px solid #4A63D6; outline-offset: 1px; }
+  
+  .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .player-card { background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(20,24,43,.12); overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; }
+  .player-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(30,42,94,.15); }
+  
+  .pc-header { padding: 16px; display: flex; gap: 16px; align-items: center; border-bottom: 1px solid var(--line); }
+  .pc-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--surface); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+  .pc-info h3 { margin: 0 0 4px 0; font-size: 1.1rem; }
+  .pc-info .id { font-size: 0.85rem; color: var(--muted); font-family: monospace; }
+  
+  .pc-body { padding: 16px; flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem; }
+  .pc-data-group { display: flex; flex-direction: column; }
+  .pc-data-group span:first-child { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .pc-data-group span:last-child { font-weight: 500; }
+  
+  .pc-footer { padding: 12px 16px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
+  .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  .status-dot.active { background: var(--ok); }
+  .status-dot.inactive { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <nav class="side" aria-label="Hlavní navigace">
+    <a href="portal.html" class="brand" style="display: block; padding: 0; min-height: auto; border-radius: 0; background: transparent; text-decoration: none;">FAČR <span>informační systém</span></a>
+    <a href="dashboard.html">Rozcestník klubu</a>
+    <a href="players.html" aria-current="page">Přehled hráčů a členů</a>
+    <a href="index.html?id=1003" id="nav-match-link">Družstva a utkání</a>
+    <a href="public-club.html" id="nav-public-club">Veřejný profil klubu</a>
+    <a href="portal.html">Veřejný portál</a>
+    
+    <div style="margin-top: auto; padding: 16px; background: rgba(0,0,0,0.15); border-radius: 12px;">
+      <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 2px;">Přihlášen jako:</div>
+      <div id="club-sidebar-name" style="font-weight: 600; margin-bottom: 16px;">Administrátor Klubu</div>
+      <a href="login.html" onclick="localStorage.removeItem('facr-role'); localStorage.removeItem('facr-user-id');" style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; text-decoration: none; min-height: 36px; font-weight: 500; font-size: 0.9rem;">
+        Odhlásit se
+      </a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <header class="head">
+      <div>
+        <p class="muted" id="club-id-label">ID: —</p>
+        <h1 id="title">Evidence hráčů</h1>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn outline" onclick="alert('Export do XLS je v demu vypnutý.')">Export (XLS)</button>
+        <button type="button" class="btn" onclick="alert('Přidávání hráčů je v demu vypnuté.')">Přidat hráče</button>
+      </div>
+    </header>
+
+    <div class="filter-bar">
+      <div class="filter-group" style="flex: 2;">
+        <label for="filter-search">Hledat (Jméno, Příjmení, ID)</label>
+        <input type="search" id="filter-search" placeholder="Např. Adámek...">
+      </div>
+      <div class="filter-group">
+        <label for="filter-status">Stav členství</label>
+        <select id="filter-status">
+          <option value="all">Vše</option>
+          <option value="active">Aktivní</option>
+          <option value="inactive">Neaktivní (Propadlé)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="players-grid" id="players-grid"></div>
+  </main>
+</div>
+
+<script src="js/db.js"></script>
+<script>
+  const currentUser = getCurrentUser();
+  const clubId = (currentUser && currentUser.clubId) ? currentUser.clubId : '7210321';
+  const club = getClub(clubId);
+
+  if (club) {
+    document.getElementById('club-id-label').textContent = `ID: ${club.id} | ${club.name}`;
+    document.getElementById('title').textContent = `Evidence hráčů (${club.shortName})`;
+    document.getElementById('nav-public-club').href = `public-club.html?id=${club.id}`;
+    if (currentUser) {
+      document.getElementById('club-sidebar-name').textContent = currentUser.name;
+    }
+
+    const clubMatches = db.matches.filter(m => m.homeId === club.id || m.awayId === club.id);
+    const firstMatch = clubMatches.find(m => m.status === 'scheduled') || clubMatches[0];
+    if (firstMatch) {
+      document.getElementById('nav-match-link').href = `index.html?id=${firstMatch.id}`;
+    }
+  }
+
+  let playersData = getPlayersByClub(clubId).map((p, index) => {
+    const isActive = index % 5 !== 4;
+    return {
+      id: p.id,
+      name: p.name,
+      year: p.year,
+      club: club ? club.shortName : 'Klub',
+      since: isActive ? '12.05.2023' : '-',
+      photo: isActive ? 'Platná' : 'Neplatná',
+      active: isActive
+    };
+  });
+
+  const grid = document.getElementById('players-grid');
+  const searchInput = document.getElementById('filter-search');
+  const statusSelect = document.getElementById('filter-status');
+
+  function getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  }
+
+  function renderPlayers() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const statusFilter = statusSelect.value;
+
+    const filtered = playersData.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm) || p.id.includes(searchTerm);
+      let matchesStatus = true;
+      if (statusFilter === 'active') matchesStatus = p.active === true;
+      if (statusFilter === 'inactive') matchesStatus = p.active === false;
+      return matchesSearch && matchesStatus;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p class="muted" style="grid-column: 1/-1;">Žádní hráči neodpovídají filtrům.</p>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(p => `
+      <div class="player-card">
+        <div class="pc-header">
+          <div class="pc-avatar" style="${!p.active ? 'color: var(--danger); background: var(--warn-bg);' : ''}">
+            ${getInitials(p.name)}
+          </div>
+          <div class="pc-info">
+            <h3>${p.name}</h3>
+            <div class="id">ID: ${p.id}</div>
+          </div>
+        </div>
+        <div class="pc-body">
+          <div class="pc-data-group"><span>Ročník</span><span>${p.year}</span></div>
+          <div class="pc-data-group"><span>Mateřský klub</span><span>${p.club}</span></div>
+          <div class="pc-data-group"><span>Členem od</span><span>${p.since}</span></div>
+          <div class="pc-data-group"><span>Platnost fotky</span><span style="${!p.active ? 'color: var(--danger);' : ''}">${p.photo}</span></div>
+        </div>
+        <div class="pc-footer">
+          <div style="${!p.active ? 'color: var(--danger);' : ''}">
+            <span class="status-dot ${p.active ? 'active' : 'inactive'}"></span>
+            ${p.active ? 'Aktivní členství' : 'Nezaplaceno'}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  searchInput.addEventListener('input', renderPlayers);
+  statusSelect.addEventListener('change', renderPlayers);
+
+  renderPlayers();
+</script>
+</body>
+</html>
